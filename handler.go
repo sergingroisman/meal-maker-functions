@@ -41,7 +41,7 @@ func initRoutes(router *gin.Engine) {
 		api.POST("/sign-in", h.SignIn)
 		// api.PUT("/", h.SignIn)
 
-		// api.GET("/get-menu/", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
+		api.GET("/get-menu/", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
 
 	}
 }

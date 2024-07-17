@@ -1,12 +1,6 @@
-# Serverless Go on Azure Functions with GitHub Actions
+# Meal Maker API
 
-[![CI/CD](https://github.com/sahansera/go-azure-functions/actions/workflows/deploy.yml/badge.svg)](https://github.com/sahansera/go-azure-functions/actions/workflows/deploy.yml)
-
-Playground for deploying Azure Functions written in Go.
-
-✍️ [Blog post](https://sahansera.dev/serverless-go-with-azure-functions-github-actions)
-
-🎥 [Video](https://www.youtube.com/watch?v=0FqD8LTjHbg)
+## Go on Azure Functions and GitHub Actions Setup ✍️
 
 ## Prerequisites 🔍
 
@@ -23,5 +17,21 @@ Playground for deploying Azure Functions written in Go.
 4. Push a commit to the `main` branch
 
 ## Contributing ❤️
+ - [Sérgio Junior
+ ](https://github.com/sergingroisman)
 
-Contributions are welcome!
+
+OBS: Caso seja necessário criar um usuário na base do mongodb:
+```bash
+mongosh -u root -p secret
+
+use meal-maker-db
+
+db.createUser(
+  {
+    user: 'root',
+    pwd: 'secret',
+    roles: [ { role: 'root', db: 'meal-maker-db' } ]
+  }
+);
+```
