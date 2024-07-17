@@ -33,12 +33,17 @@ func initRoutes(router *gin.Engine) {
 
 	h := handlers.NewHandlers(ctx, database)
 
-	router.GET("/api/get-users", handlers.AuthenticateMiddleware, h.GetUsers)
-	router.GET("/api/get-user/:phoneNumber", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
-	router.POST("/api/sign-up", h.SignUp)
-	router.POST("/api/sign-in", h.SignIn)
+	api := router.Group("/api")
+	{
+		api.GET("/get-users", handlers.AuthenticateMiddleware, h.GetUsers)
+		api.GET("/get-user/:phoneNumber", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
+		api.POST("/sign-up", h.SignUp)
+		api.POST("/sign-in", h.SignIn)
+		// api.PUT("/", h.SignIn)
 
-	router.GET("/api/get-menu/", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
+		// api.GET("/get-menu/", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
+
+	}
 }
 
 func getAddr() string {

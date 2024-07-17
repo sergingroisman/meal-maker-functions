@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
     
 env:
-  AZURE_FUNCTIONAPP_NAME: azgofuncapp   # set this to your application's name
+  AZURE_FUNCTIONAPP_NAME: meal-maker-app   # set this to your application's name
 
 jobs:
 

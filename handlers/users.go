@@ -182,7 +182,7 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
-			"message": "Não foi possível criar esse usuário",
+			"message": "Formulário não está válido",
 		})
 		return
 	}
