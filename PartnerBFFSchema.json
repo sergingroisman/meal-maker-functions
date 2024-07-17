@@ -1,0 +1,124 @@
+{
+  "_id": {
+    "$oid": "6696fdcc50c0f8047a84d523"
+  },
+  "name": "Vieira Refeições",
+  "cnpj": "123",
+  "id": 1,
+  "logo": "https://images.com.jpg",
+  "schedules": [
+    {
+      "dayOfWeek": "",
+      "startDate": "",
+      "endDate": ""
+    }
+  ],
+  "menus": [
+    {
+      "_id": {
+    		"$oid": "6696fdcc50c0f8047a84d535"
+  		},
+      "name": "Oferta do Dia",
+      "smallDescription": "Dupla da Semana",
+      "dishes": [
+        {
+          "_id": {
+      			"$oid": "6696fdcc50c0f8047a84d590"
+      		},
+          "title": "Bife c/ Fritas",
+          "price": 23.99,
+          "discount": 0.0,
+          "description": "Escolha até 3 acompanhamentos",
+          "observation": "",
+          "maxAccompanimentsCount": 10,
+          "accompaniments": [
+            {
+              "_id": {
+          			"$oid": "6696fdcc50c0f8047a84d511"
+          		},
+              "title": "Arroz Branco",
+							"category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d521"
+              },
+              "title": "Feijão Preto",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Macarrão",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Legumes",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Batata Frita",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Salada de Alface",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Tomate",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Cebola",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Farofa",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Macarronese",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Salpicao",
+              "category": ""
+            },
+            {
+              "_id": {
+                "$oid": "6696fdcc50c0f8047a84d511"
+              },
+              "title": "Maionese",
+              "category": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
