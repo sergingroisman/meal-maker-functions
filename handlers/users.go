@@ -14,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Address struct {
@@ -29,6 +30,7 @@ type User struct {
 	Name        string             `bson:"name" json:"name"`
 	PhoneNumber string             `bson:"phoneNumber" json:"phoneNumber"`
 	Password    string             `bson:"password" json:"password"`
+	PartnerID   int                `bson:"partnerId" json:"partnerId"`
 	Address     Address            `bson:"address" json:"address"`
 	CreatedAt   string             `bson:"createdAt" json:"createdAt"`
 }
@@ -41,8 +43,13 @@ type SignUpReqBody struct {
 }
 
 type SignInReqBody struct {
-	PhoneNumber string `bson:"phoneNumber" json:"phoneNumber"`
-	Password    string `bson:"password" json:"password"`
+	PhoneNumber string `bson:"phoneNumber" json:"phoneNumber" validate:"required"`
+	Password    string `bson:"password" json:"password" validate:"required,min=6"`
+}
+
+type UpdatePasswordReqBody struct {
+	Password    string `bson:"password" json:"password" validate:"required,min=6"`
+	NewPassword string `bson:"newPassword" json:"newPassword" validate:"required,min=6"`
 }
 
 type SignInResponse struct {
@@ -50,6 +57,7 @@ type SignInResponse struct {
 	Accesstoken string             `json:"accessToken"`
 	Name        string             `json:"name"`
 	PhoneNumber string             `json:"phoneNumber"`
+	PartnerID   int                `json:"partnerId"`
 	ExpiresIn   time.Duration      `json:"expiresIn"`
 }
 
@@ -79,7 +87,7 @@ func (h *Handlers) GetUserByPhoneNumber(c *gin.Context) {
 	var user User
 	phoneNumber := c.Param("phoneNumber")
 	if phoneNumber == "" {
-		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone")
+		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone como parâmetro")
 		return
 	}
 
@@ -140,6 +148,7 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		Name:        body.Name,
 		PhoneNumber: body.PhoneNumber,
 		Password:    passwordEncoded,
+		PartnerID:   1,
 		Address: Address{
 			CEP:        body.Address.CEP,
 			Reference:  body.Address.Reference,
@@ -225,6 +234,7 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		ID:          user.ID,
 		Accesstoken: bearerToken.String(),
 		Name:        user.Name,
+		PartnerID:   1,
 		PhoneNumber: user.PhoneNumber,
 		ExpiresIn:   (time.Duration(30*24) * time.Hour),
 	}
@@ -235,38 +245,71 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	})
 }
 
-func AuthenticateMiddleware(c *gin.Context) {
-	authorizationHeader := c.Request.Header["Authorization"][0]
-	if authorizationHeader == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Authorization missing in Header",
-		})
-		c.Abort()
+func (h *Handlers) UpdatePassword(c *gin.Context) {
+	body := UpdatePasswordReqBody{}
+	phoneNumber := c.Param("phoneNumber")
+	if phoneNumber == "" {
+		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone como parâmetro")
 		return
 	}
 
-	tokenString := strings.Split(authorizationHeader, " ")[1]
-	if tokenString == "" {
+	if err := c.ShouldBindBodyWithJSON(&body); err != nil {
+		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
-			"message": "Bearer Token Authorization missing in Header",
+			"message": "Não foi possível processar esse número de telefone e senha",
 		})
-		c.Abort()
 		return
 	}
 
-	_, err := verifyToken(tokenString)
+	validate := validator.New()
+	if err := validate.Struct(&body); err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "Formulário não está válido",
+		})
+		return
+	}
+
+	var user User
+	filterUserByPhoneNumber := bson.D{{Key: "phoneNumber", Value: phoneNumber}}
+	collection := h.database.Collection("Users")
+	err := collection.FindOne(h.context, filterUserByPhoneNumber).Decode(&user)
 	if err != nil {
+		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
-			"message": "Token inválido",
+			"message": "Não foi possível encontrar esse usuário pelo número de telefone",
 		})
-		c.Abort()
 		return
 	}
 
-	c.Next()
+	if !passwordsMatch(user.Password, body.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "Não foi possível realizar o login com essa combinação de senha",
+		})
+		return
+	}
+
+	filter := bson.D{{Key: "_id", Value: user.ID}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: passwordEncodeB64(body.NewPassword)}}}}
+	opts := options.Update().SetUpsert(false)
+	_, err = collection.UpdateOne(h.context, filter, update, opts)
+	if err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "Não foi possível atualizar a senha",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "Senha atualizada com sucesso",
+	})
 }
 
 func verifyToken(tokenString string) (*jwt.Token, error) {

@@ -4,13 +4,38 @@
   },
   "name": "Vieira Refeições",
   "cnpj": "123",
-  "id": 1,
-  "logo": "https://images.com.jpg",
+  "partnerId": 1,
+  "logo": "https://as1.ftcdn.net/v2/jpg/02/24/13/50/1000_F_224135073_y2jWq26SviCjUrv8BTqbMZIJpPfyIwY7.jpg",
   "schedules": [
     {
-      "dayOfWeek": "",
-      "startDate": "",
-      "endDate": ""
+      "dayOfWeek": "Monday",
+      "startDate": "11:30",
+      "endDate": "22:00"
+    },
+    {
+      "dayOfWeek": "Tuesday",
+      "startDate": "11:30",
+      "endDate": "22:00"
+    },
+    {
+      "dayOfWeek": "Wednesday",
+      "startDate": "11:30",
+      "endDate": "22:00"
+    },
+    {
+      "dayOfWeek": "Thursday",
+      "startDate": "11:30",
+      "endDate": "22:00"
+    },
+    {
+      "dayOfWeek": "Saturday",
+      "startDate": "11:30",
+      "endDate": "22:00"
+    },
+    {
+      "dayOfWeek": "Sunday",
+      "startDate": "11:30",
+      "endDate": "22:00"
     }
   ],
   "menus": [

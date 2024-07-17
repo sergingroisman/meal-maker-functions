@@ -6,3 +6,6 @@ azure-functions-local:
 
 swagger:
 	bash swagger.sh
+
+run-dev:
+	go run handler.go

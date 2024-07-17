@@ -1,0 +1,17 @@
+{
+  "_id": {
+    "$oid": "6696e83971db278981d54d2a"
+  },
+  "name": "Teste",
+  "phoneNumber": "81989980909",
+  "password": "cXdlcnR5MTIz",
+  "partnerId": 1,
+  "address": {
+    "cep": "skkuur",
+    "reference": "skkuur",
+    "city": "skkuur",
+    "complement": "skkuur",
+    "street": "skkuur"
+  },
+  "createdAt": "2024-07-16 18:38:04.393748267 -0300 -03 m=+25.330788011"
+}

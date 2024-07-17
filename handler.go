@@ -37,9 +37,9 @@ func initRoutes(router *gin.Engine) {
 	{
 		api.GET("/get-users", handlers.AuthenticateMiddleware, h.GetUsers)
 		api.GET("/get-user/:phoneNumber", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
+		api.POST("/update-user-password/:phoneNumber", handlers.AuthenticateMiddleware, h.UpdatePassword)
 		api.POST("/sign-up", h.SignUp)
 		api.POST("/sign-in", h.SignIn)
-		// api.PUT("/", h.SignIn)
 
 		api.GET("/get-menu/", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
 
