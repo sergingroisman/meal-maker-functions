@@ -1,11 +1,11 @@
-build:
-	@go build handler.go
-
-azure-functions-local:
-	@func start
-
 swagger:
-	bash swagger.sh
+	bash scripts/swagger.sh
 
-run-dev:
-	go run handler.go
+build:
+	go build -o app cmd/main.go
+
+build_linux:
+	GOOS=linux go build -o app cmd/main.go
+
+start:
+	func start

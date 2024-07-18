@@ -1,8 +1,8 @@
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=mealmakerstorage;...",
     "FUNCTIONS_WORKER_RUNTIME": "custom",
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=mealmakerstorage;...",
     "MONGODB_URL": "mongodb://root:secret@localhost:27017",
     "MONGODB_DATABASE": "meal-maker-db",
     "JWT_SECRET": "your-secret-key"
