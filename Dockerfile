@@ -1,22 +1,25 @@
-FROM golang
+FROM golang:1.22-alpine AS builder
 
-# Copy the local package files to the container's workspace
-ADD . /go/src/github.com/sergingroisman/meal-maker-functions
+WORKDIR /serverless
 
-# bake in some environment variables?
-# ENV SOME_ENV ""
+COPY go.* ./
 
-# Set the working directory to avoid relative paths after this
-WORKDIR $GOPATH/src/github.com/sergingroisman/meal-maker-functions
+RUN go mod download
 
-# Fetch the dependencies
-RUN go get .
+COPY . .
 
-# build the binary to run later
-RUN go build handler.go
+RUN go build -o app cmd/main.go
 
-# Run the command by default when the container starts
-ENTRYPOINT /go/bin/program
+# Final image based on Azure Functions runtime
+FROM mcr.microsoft.com/azure-functions/go:3.0
+
+WORKDIR /home/site/wwwroot
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /serverless/app ./
+
+# Set the entrypoint to execute the function app
+ENTRYPOINT ["./app"]
 
 # Document that the service listens on port 3000
 EXPOSE 8080

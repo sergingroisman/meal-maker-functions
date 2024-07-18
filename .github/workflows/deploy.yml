@@ -8,6 +8,7 @@ on:
     
 env:
   AZURE_FUNCTIONAPP_NAME: meal-maker-serverless
+  GO_VERSION: 1.22.5
 
 jobs:
 
@@ -22,9 +23,9 @@ jobs:
         creds: ${{ secrets.AZURE_RBAC_CREDENTIALS }}
 
     - name: 'Set up Go'
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.22.5
+        go-version: ${{ env.GO_VERSION }}
 
     - name: Build
       run: make build_linux
