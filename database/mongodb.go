@@ -14,7 +14,8 @@ type MongodbConfig struct {
 }
 
 func GetConnection(ctx context.Context, config MongodbConfig) (*mongo.Client, *mongo.Database, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.ConnectionURL))
+	server_api := options.ServerAPI(options.ServerAPIVersion1)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.ConnectionURL).SetServerAPIOptions(server_api))
 	if err != nil {
 		panic(err)
 	}
