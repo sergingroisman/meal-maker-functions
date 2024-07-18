@@ -5,7 +5,7 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "update-user-password/{phone_number}",
+      "route": "get-restaurant/{partner_id}",
       "methods": [
         "get"
       ]

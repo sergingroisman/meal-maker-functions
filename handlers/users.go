@@ -28,37 +28,38 @@ type Address struct {
 type User struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name        string             `bson:"name" json:"name"`
-	PhoneNumber string             `bson:"phoneNumber" json:"phoneNumber"`
+	PhoneNumber string             `bson:"phone_number" json:"phone_number"`
 	Password    string             `bson:"password" json:"password"`
-	PartnerID   int                `bson:"partnerId" json:"partnerId"`
+	PartnerID   int                `bson:"partner_id" json:"partner_id"`
 	Address     Address            `bson:"address" json:"address"`
-	CreatedAt   string             `bson:"createdAt" json:"createdAt"`
+	CreatedAt   string             `bson:"created_at" json:"created_at"`
+	UpdatedAt   string             `bson:"updated_at" json:"updated_at"`
 }
 
 type SignUpReqBody struct {
 	Name        string  `bson:"name" json:"name" validate:"required"`
-	PhoneNumber string  `bson:"phoneNumber" json:"phoneNumber" validate:"required"`
+	PhoneNumber string  `bson:"phone_number" json:"phone_number" validate:"required"`
 	Password    string  `bson:"password" json:"password" validate:"required,min=6"`
 	Address     Address `bson:"address" json:"address"`
 }
 
 type SignInReqBody struct {
-	PhoneNumber string `bson:"phoneNumber" json:"phoneNumber" validate:"required"`
+	PhoneNumber string `bson:"phone_number" json:"phone_number" validate:"required"`
 	Password    string `bson:"password" json:"password" validate:"required,min=6"`
 }
 
 type UpdatePasswordReqBody struct {
 	Password    string `bson:"password" json:"password" validate:"required,min=6"`
-	NewPassword string `bson:"newPassword" json:"newPassword" validate:"required,min=6"`
+	NewPassword string `bson:"new_password" json:"new_password" validate:"required,min=6"`
 }
 
 type SignInResponse struct {
 	ID          primitive.ObjectID `json:"_id"`
-	Accesstoken string             `json:"accessToken"`
+	Accesstoken string             `json:"access_token"`
 	Name        string             `json:"name"`
-	PhoneNumber string             `json:"phoneNumber"`
-	PartnerID   int                `json:"partnerId"`
-	ExpiresIn   time.Duration      `json:"expiresIn"`
+	PhoneNumber string             `json:"phone_number"`
+	PartnerID   int                `json:"partner_id"`
+	ExpiresIn   time.Duration      `json:"expires_in"`
 }
 
 func (h *Handlers) GetUsers(c *gin.Context) {
@@ -73,8 +74,11 @@ func (h *Handlers) GetUsers(c *gin.Context) {
 	for cursor.Next(h.context) {
 		var user User
 		if err := cursor.Decode(&user); err != nil {
-			log.Fatalf("%s", err)
-			c.IndentedJSON(http.StatusInternalServerError, err)
+			log.Println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    http.StatusInternalServerError,
+				"message": "Não foi possível processar a lista de usuários",
+			})
 			return
 		}
 		users = append(users, user)
@@ -85,19 +89,22 @@ func (h *Handlers) GetUsers(c *gin.Context) {
 
 func (h *Handlers) GetUserByPhoneNumber(c *gin.Context) {
 	var user User
-	phoneNumber := c.Param("phoneNumber")
-	if phoneNumber == "" {
+	phone_number := c.Param("phone_number")
+	if phone_number == "" {
 		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone como parâmetro")
 		return
 	}
 
 	collection := h.database.Collection("Users")
-	filter := bson.D{{Key: "phoneNumber", Value: phoneNumber}}
+	filter := bson.D{{Key: "phone_number", Value: phone_number}}
 	err := collection.FindOne(h.context, filter).Decode(&user)
 
 	if err != nil {
-		log.Fatalf("Não foi possível encontrar esse usuário pelo número de telefone%s", err)
-		c.IndentedJSON(http.StatusBadRequest, err)
+		log.Println(err.Error())
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    http.StatusNotFound,
+			"message": "Não foi possível encontrar esse usuário pelo número de telefone",
+		})
 		return
 	}
 
@@ -127,9 +134,9 @@ func (h *Handlers) SignUp(c *gin.Context) {
 
 	var user User
 	collection := h.database.Collection("Users")
-	filterUserByPhoneNumber := bson.D{{Key: "phoneNumber", Value: body.PhoneNumber}}
+	filter_user_by_phone_number := bson.D{{Key: "phone_number", Value: body.PhoneNumber}}
 
-	err := collection.FindOne(h.context, filterUserByPhoneNumber).Decode(&user)
+	err := collection.FindOne(h.context, filter_user_by_phone_number).Decode(&user)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -142,12 +149,12 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
-	passwordEncoded := passwordEncodeB64(body.Password)
+	password_encoded := passwordEncodeB64(body.Password)
 	user = User{
 		ID:          primitive.NewObjectID(),
 		Name:        body.Name,
 		PhoneNumber: body.PhoneNumber,
-		Password:    passwordEncoded,
+		Password:    password_encoded,
 		PartnerID:   1,
 		Address: Address{
 			CEP:        body.Address.CEP,
@@ -157,6 +164,7 @@ func (h *Handlers) SignUp(c *gin.Context) {
 			Street:     body.Address.Street,
 		},
 		CreatedAt: time.Now().String(),
+		UpdatedAt: time.Now().String(),
 	}
 
 	_, err = collection.InsertOne(h.context, user)
@@ -197,10 +205,10 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	}
 
 	var user User
-	filterUserByPhoneNumber := bson.D{{Key: "phoneNumber", Value: body.PhoneNumber}}
+	filter_user_by_phone_number := bson.D{{Key: "phone_number", Value: body.PhoneNumber}}
 	collection := h.database.Collection("Users")
 
-	err := collection.FindOne(h.context, filterUserByPhoneNumber).Decode(&user)
+	err := collection.FindOne(h.context, filter_user_by_phone_number).Decode(&user)
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -218,8 +226,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	var bearerToken strings.Builder
-	bearerToken.WriteString("Bearer ")
+	var bearer_token strings.Builder
+	bearer_token.WriteString("Bearer ")
 	token, err := createToken(user.PhoneNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -229,10 +237,10 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		return
 	}
 
-	bearerToken.WriteString(token)
+	bearer_token.WriteString(token)
 	res := SignInResponse{
 		ID:          user.ID,
-		Accesstoken: bearerToken.String(),
+		Accesstoken: bearer_token.String(),
 		Name:        user.Name,
 		PartnerID:   1,
 		PhoneNumber: user.PhoneNumber,
@@ -240,15 +248,15 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":        http.StatusOK,
-		"accessToken": res,
+		"code":     http.StatusOK,
+		"loggedIn": res,
 	})
 }
 
 func (h *Handlers) UpdatePassword(c *gin.Context) {
 	body := UpdatePasswordReqBody{}
-	phoneNumber := c.Param("phoneNumber")
-	if phoneNumber == "" {
+	phone_number := c.Param("phone_number")
+	if phone_number == "" {
 		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone como parâmetro")
 		return
 	}
@@ -273,9 +281,9 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 	}
 
 	var user User
-	filterUserByPhoneNumber := bson.D{{Key: "phoneNumber", Value: phoneNumber}}
+	filter_user_by_phone_number := bson.D{{Key: "phone_number", Value: phone_number}}
 	collection := h.database.Collection("Users")
-	err := collection.FindOne(h.context, filterUserByPhoneNumber).Decode(&user)
+	err := collection.FindOne(h.context, filter_user_by_phone_number).Decode(&user)
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -292,9 +300,11 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 		})
 		return
 	}
-
 	filter := bson.D{{Key: "_id", Value: user.ID}}
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: passwordEncodeB64(body.NewPassword)}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "password", Value: passwordEncodeB64(body.NewPassword)},
+		{Key: "updated_at", Value: time.Now().String()},
+	}}}
 	opts := options.Update().SetUpsert(false)
 	_, err = collection.UpdateOne(h.context, filter, update, opts)
 	if err != nil {
@@ -312,10 +322,10 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 	})
 }
 
-func verifyToken(tokenString string) (*jwt.Token, error) {
-	var secretKey = []byte(os.Getenv("JWT_SECRET"))
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
+func verifyToken(token_string string) (*jwt.Token, error) {
+	var SECRET = []byte(os.Getenv("JWT_SECRET"))
+	token, err := jwt.Parse(token_string, func(token *jwt.Token) (interface{}, error) {
+		return SECRET, nil
 	})
 	if err != nil {
 		return nil, err
@@ -329,32 +339,32 @@ func verifyToken(tokenString string) (*jwt.Token, error) {
 }
 
 func passwordEncodeB64(password string) string {
-	passwordEncoded := base64.StdEncoding.EncodeToString([]byte(password))
-	return passwordEncoded
+	password_encoded := base64.StdEncoding.EncodeToString([]byte(password))
+	return password_encoded
 }
 
-func passwordsMatch(hashedPassword, password string) bool {
-	passwordEncoded := passwordEncodeB64(password)
-	return hashedPassword == passwordEncoded
+func passwordsMatch(hashed_password, password string) bool {
+	password_encoded := passwordEncodeB64(password)
+	return hashed_password == password_encoded
 }
 
-func createToken(phoneNumber string) (string, error) {
-	var secretKey = []byte(os.Getenv("JWT_SECRET"))
+func createToken(phone_number string) (string, error) {
+	var SECRET = []byte(os.Getenv("JWT_SECRET"))
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": phoneNumber,
+		"sub": phone_number,
 		"iss": "meal-maker-functions",
 		"aud": getRole(),
 		"exp": time.Now().Add(time.Hour).Unix(),
 		"iat": time.Now().Unix(),
 	})
 
-	tokenString, err := claims.SignedString(secretKey)
+	token_string, err := claims.SignedString(SECRET)
 	if err != nil {
 		return "", err
 	}
 
-	return tokenString, nil
+	return token_string, nil
 }
 
 func getRole() string {
