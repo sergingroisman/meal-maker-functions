@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
     
 env:
-  AZURE_FUNCTIONAPP_NAME: meal-maker-app   # set this to your application's name
+  AZURE_FUNCTIONAPP_NAME: meal-maker-functions
 
 jobs:
 
@@ -24,7 +24,7 @@ jobs:
     - name: 'Set up Go'
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18
+        go-version: 1.22
 
     - name: Build
       run: GOOS=linux GOARCH=amd64 go build handler.go

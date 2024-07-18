@@ -7,7 +7,7 @@ ADD . /go/src/github.com/sergingroisman/meal-maker-functions
 # ENV SOME_ENV ""
 
 # Set the working directory to avoid relative paths after this
-WORKDIR /go/src/github.com/sergingroisman/meal-maker-functions
+WORKDIR $GOPATH/src/github.com/sergingroisman/meal-maker-functions
 
 # Fetch the dependencies
 RUN go get .
