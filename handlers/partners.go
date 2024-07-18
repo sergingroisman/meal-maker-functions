@@ -84,10 +84,20 @@ func (h *Handlers) GetRestaurantByPartnerId(c *gin.Context) {
 
 func (partner *Partner) IsOpen(t time.Time) bool {
 	for _, schedule := range partner.Schedules {
-		startTime := parseTime(schedule.StartTime)
-		endTime := parseTime(schedule.EndTime)
-		if parseDayOfWeekTime(schedule.DayOfWeek) == t.Weekday() {
-			if t.After(startTime) && t.Before(endTime) {
+		startTime, err := time.Parse("15:04", schedule.StartTime)
+		if err != nil {
+			return false
+		}
+		endTime, err := time.Parse("15:04", schedule.EndTime)
+		if err != nil {
+			return false
+		}
+
+		startTime = time.Date(t.Year(), t.Month(), t.Day(), startTime.Hour(), startTime.Minute(), 0, 0, t.Location())
+		endTime = time.Date(t.Year(), t.Month(), t.Day(), endTime.Hour(), endTime.Minute(), 0, 0, t.Location())
+
+		if t.Weekday().String() == schedule.DayOfWeek {
+			if (t.After(startTime) || t.Equal(startTime)) && (t.Before(endTime) || t.Equal(endTime)) {
 				return true
 			}
 		}
