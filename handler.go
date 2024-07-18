@@ -42,14 +42,14 @@ func initRoutes(router *gin.Engine) {
 		api.POST("/sign-up", h.SignUp)
 		api.POST("/sign-in", h.SignIn)
 		api.GET("/get-restaurant/:partner_id", h.GetRestaurantByPartnerId)
+		api.GET("/health-check", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"status_code": http.StatusOK,
+				"message":     "Application is healthy",
+			})
+		})
 	}
 
-	router.GET("/health-check", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status_code": http.StatusOK,
-			"message":     "Application is healthy",
-		})
-	})
 }
 
 func getAddr() string {
