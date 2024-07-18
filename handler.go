@@ -37,11 +37,11 @@ func initRoutes(router *gin.Engine) {
 	h := handlers.NewHandlers(ctx, database)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://portal.azure.com"},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS", "PUT"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Content-Length", "User-Agent", "Host", "Referrer"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		AllowAllOrigins:  false,
 		AllowOriginFunc:  func(origin string) bool { return true },
 		MaxAge:           12 * time.Hour,
 	}))
