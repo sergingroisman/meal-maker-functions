@@ -8,8 +8,8 @@ import (
 )
 
 func AuthenticateMiddleware(c *gin.Context) {
-	authorizationHeader := c.Request.Header["Authorization"][0]
-	if authorizationHeader == "" {
+	authorization_header := c.Request.Header["Authorization"][0]
+	if authorization_header == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status_code": http.StatusBadRequest,
 			"message":     "Authorization missing in Header",
@@ -18,8 +18,8 @@ func AuthenticateMiddleware(c *gin.Context) {
 		return
 	}
 
-	tokenString := strings.Split(authorizationHeader, " ")[1]
-	if tokenString == "" {
+	token_string := strings.Split(authorization_header, " ")[1]
+	if token_string == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status_code": http.StatusBadRequest,
 			"message":     "Bearer Token Authorization missing in Header",
@@ -28,7 +28,7 @@ func AuthenticateMiddleware(c *gin.Context) {
 		return
 	}
 
-	_, err := verifyToken(tokenString)
+	_, err := verifyToken(token_string)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status_code": http.StatusBadRequest,
