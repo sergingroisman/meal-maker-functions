@@ -62,8 +62,8 @@ func (h *Handlers) GetRestaurantByPartnerId(c *gin.Context) {
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusNotFound, gin.H{
-			"code":    http.StatusNotFound,
-			"message": "Não foi possível encontrar um parceiro com esse id",
+			"status_code": http.StatusNotFound,
+			"message":     "Não foi possível encontrar um parceiro com esse id",
 		})
 		return
 	}

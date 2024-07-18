@@ -76,8 +76,8 @@ func (h *Handlers) GetUsers(c *gin.Context) {
 		if err := cursor.Decode(&user); err != nil {
 			log.Println(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"message": "Não foi possível processar a lista de usuários",
+				"status_code": http.StatusInternalServerError,
+				"message":     "Não foi possível processar a lista de usuários",
 			})
 			return
 		}
@@ -102,8 +102,8 @@ func (h *Handlers) GetUserByPhoneNumber(c *gin.Context) {
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusNotFound, gin.H{
-			"code":    http.StatusNotFound,
-			"message": "Não foi possível encontrar esse usuário pelo número de telefone",
+			"status_code": http.StatusNotFound,
+			"message":     "Não foi possível encontrar esse usuário pelo número de telefone",
 		})
 		return
 	}
@@ -116,8 +116,8 @@ func (h *Handlers) SignUp(c *gin.Context) {
 	if err := c.ShouldBindBodyWithJSON(&body); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível criar esse usuário",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível criar esse usuário",
 		})
 		return
 	}
@@ -126,8 +126,8 @@ func (h *Handlers) SignUp(c *gin.Context) {
 	if err := validate.Struct(&body); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Algo está errado com o body da requisição",
+			"status_code": http.StatusBadRequest,
+			"message":     "Algo está errado com o body da requisição",
 		})
 		return
 	}
@@ -143,8 +143,8 @@ func (h *Handlers) SignUp(c *gin.Context) {
 
 	if user.PhoneNumber != "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Usuário já foi cadastrado com o mesmo número de telefone",
+			"status_code": http.StatusBadRequest,
+			"message":     "Usuário já foi cadastrado com o mesmo número de telefone",
 		})
 		return
 	}
@@ -171,15 +171,15 @@ func (h *Handlers) SignUp(c *gin.Context) {
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": "Usuário não foi cadastrado com sucesso",
+			"status_code": http.StatusInternalServerError,
+			"message":     "Usuário não foi cadastrado com sucesso",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": http.StatusOK,
-		"user": user,
+		"status_code": http.StatusOK,
+		"user":        user,
 	})
 }
 
@@ -188,8 +188,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	if err := c.ShouldBindBodyWithJSON(&body); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível processar esse número de telefone e senha",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível processar esse número de telefone e senha",
 		})
 		return
 	}
@@ -198,8 +198,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	if err := validate.Struct(&body); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Formulário não está válido",
+			"status_code": http.StatusBadRequest,
+			"message":     "Formulário não está válido",
 		})
 		return
 	}
@@ -212,16 +212,16 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível encontrar esse usuário pelo número de telefone",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível encontrar esse usuário pelo número de telefone",
 		})
 		return
 	}
 
 	if !passwordsMatch(user.Password, body.Password) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível realizar o login com essa combinação de senha",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível realizar o login com essa combinação de senha",
 		})
 		return
 	}
@@ -231,8 +231,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	token, err := createToken(user.PhoneNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível criar um token de acesso",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível criar um token de acesso",
 		})
 		return
 	}
@@ -248,8 +248,8 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":     http.StatusOK,
-		"loggedIn": res,
+		"status_code": http.StatusOK,
+		"loggedIn":    res,
 	})
 }
 
@@ -264,8 +264,8 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 	if err := c.ShouldBindBodyWithJSON(&body); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível processar esse número de telefone e senha",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível processar esse número de telefone e senha",
 		})
 		return
 	}
@@ -274,8 +274,8 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 	if err := validate.Struct(&body); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Formulário não está válido",
+			"status_code": http.StatusBadRequest,
+			"message":     "Formulário não está válido",
 		})
 		return
 	}
@@ -287,16 +287,16 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível encontrar esse usuário pelo número de telefone",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível encontrar esse usuário pelo número de telefone",
 		})
 		return
 	}
 
 	if !passwordsMatch(user.Password, body.Password) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível realizar o login com essa combinação de senha",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível realizar o login com essa combinação de senha",
 		})
 		return
 	}
@@ -310,15 +310,15 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "Não foi possível atualizar a senha",
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível atualizar a senha",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":    http.StatusOK,
-		"message": "Senha atualizada com sucesso",
+		"status_code": http.StatusOK,
+		"message":     "Senha atualizada com sucesso",
 	})
 }
 

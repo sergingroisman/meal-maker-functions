@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,13 @@ func initRoutes(router *gin.Engine) {
 		api.POST("/sign-in", h.SignIn)
 		api.GET("/get-restaurant/:partner_id", h.GetRestaurantByPartnerId)
 	}
+
+	router.GET("/health-check", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status_code": http.StatusOK,
+			"message":     "Application is healthy",
+		})
+	})
 }
 
 func getAddr() string {
