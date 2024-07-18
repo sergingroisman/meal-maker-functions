@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
     
 env:
-  AZURE_FUNCTIONAPP_NAME: meal-maker-functions
+  AZURE_FUNCTIONAPP_NAME: meal-maker-serverless
 
 jobs:
 
