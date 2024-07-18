@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	"github.com/sergingroisman/meal-maker-functions/cmd/config"
 	"github.com/sergingroisman/meal-maker-functions/database"
 	"github.com/sergingroisman/meal-maker-functions/handlers"
 )
@@ -17,13 +17,13 @@ import (
 func initRoutes(router *gin.Engine) {
 	ctx := context.Background()
 
-	err := godotenv.Load(".env")
+	err := config.Init()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %s", err)
+		log.Fatalf("Falha ao obter as variáveis de ambiente internas: %s", err)
 	}
 
-	MONGODB_URL := os.Getenv("MONGODB_URL")
-	MONGODB_DATABASE := os.Getenv("MONGODB_DATABASE")
+	MONGODB_URL := config.Env.MongoDB.URL
+	MONGODB_DATABASE := config.Env.MongoDB.Database
 
 	_, database, err := database.GetConnection(ctx, database.MongodbConfig{
 		ConnectionURL: MONGODB_URL,

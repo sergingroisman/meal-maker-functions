@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sergingroisman/meal-maker-functions/cmd/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -323,7 +323,7 @@ func (h *Handlers) UpdatePassword(c *gin.Context) {
 }
 
 func verifyToken(token_string string) (*jwt.Token, error) {
-	var SECRET = []byte(os.Getenv("JWT_SECRET"))
+	var SECRET = []byte(config.Env.Auth.SecretKey)
 	token, err := jwt.Parse(token_string, func(token *jwt.Token) (interface{}, error) {
 		return SECRET, nil
 	})
@@ -349,7 +349,7 @@ func passwordsMatch(hashed_password, password string) bool {
 }
 
 func createToken(phone_number string) (string, error) {
-	var SECRET = []byte(os.Getenv("JWT_SECRET"))
+	var SECRET = []byte(config.Env.Auth.SecretKey)
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": phone_number,
