@@ -10,13 +10,13 @@ COPY . .
 
 RUN go build -o app cmd/main.go
 
-# Final image based on Azure Functions runtime
-FROM mcr.microsoft.com/azure-functions/go:3.0
+# # Final image based on Azure Functions runtime
+# FROM mcr.microsoft.com/azure-functions/go:3.0
 
-WORKDIR /home/site/wwwroot
+# WORKDIR /home/site/wwwroot
 
-# Copy the compiled binary from the builder stage
-COPY --from=builder /serverless/app ./
+# # Copy the compiled binary from the builder stage
+# COPY --from=builder /serverless/app ./
 
 # Set the entrypoint to execute the function app
 ENTRYPOINT ["./app"]
