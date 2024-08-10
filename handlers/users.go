@@ -18,11 +18,12 @@ import (
 )
 
 type Address struct {
-	CEP        string `bson:"cep" json:"cep"`
-	Reference  string `bson:"reference" json:"reference"`
-	City       string `bson:"city" json:"city"`
-	Complement string `bson:"complement" json:"complement"`
 	Street     string `bson:"street" json:"street"`
+	Number     string `bson:"number" json:"number"`
+	City       string `bson:"city" json:"city"`
+	CEP        string `bson:"cep" json:"cep"`
+	State      string `bson:"state" json:"state"`
+	Complement string `bson:"complement" json:"complement"`
 }
 
 type User struct {
@@ -87,17 +88,26 @@ func (h *Handlers) GetUsers(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, users)
 }
 
-func (h *Handlers) GetUserByPhoneNumber(c *gin.Context) {
+func (h *Handlers) GetUserById(c *gin.Context) {
 	var user User
-	phone_number := c.Param("phone_number")
-	if phone_number == "" {
-		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone como parâmetro")
+	user_id_str := c.Param("user_id")
+	if user_id_str == "" {
+		c.IndentedJSON(http.StatusBadRequest, "Necessário passar id do cardápio por parâmetro")
+		return
+	}
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Formato de ID inválido",
+		})
 		return
 	}
 
 	collection := h.database.Collection("Users")
-	filter := bson.D{{Key: "phone_number", Value: phone_number}}
-	err := collection.FindOne(h.context, filter).Decode(&user)
+	filter := bson.D{{Key: "_id", Value: user_id}}
+	err = collection.FindOne(h.context, filter).Decode(&user)
 
 	if err != nil {
 		log.Println(err.Error())
@@ -158,9 +168,10 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		PartnerID:   1,
 		Address: Address{
 			CEP:        body.Address.CEP,
-			Reference:  body.Address.Reference,
 			City:       body.Address.City,
 			Complement: body.Address.Complement,
+			Number:     body.Address.Number,
+			State:      body.Address.State,
 			Street:     body.Address.Street,
 		},
 		CreatedAt: time.Now().String(),
@@ -177,9 +188,22 @@ func (h *Handlers) SignUp(c *gin.Context) {
 		return
 	}
 
+	var bearer_token strings.Builder
+	bearer_token.WriteString("Bearer ")
+	token, err := createToken(user.PhoneNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível criar um token de acesso",
+		})
+		return
+	}
+	bearer_token.WriteString(token)
+
 	c.JSON(http.StatusOK, gin.H{
 		"status_code": http.StatusOK,
 		"user":        user,
+		"accessToken": bearer_token.String(),
 	})
 }
 
@@ -250,6 +274,83 @@ func (h *Handlers) SignIn(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status_code": http.StatusOK,
 		"loggedIn":    res,
+	})
+}
+
+func (h *Handlers) UpdateUserAddress(c *gin.Context) {
+	body := Address{}
+	user_id_str := c.Param("user_id")
+	if user_id_str == "" {
+		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o número de telefone como parâmetro")
+		return
+	}
+
+	if err := c.ShouldBindBodyWithJSON(&body); err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível processar esse número de telefone e senha",
+		})
+		return
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(&body); err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Formulário não está válido",
+		})
+		return
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Formato de ID inválido",
+		})
+		return
+	}
+
+	var user User
+	filter_user_by_id := bson.D{{Key: "_id", Value: user_id}}
+	collection := h.database.Collection("Users")
+	err = collection.FindOne(h.context, filter_user_by_id).Decode(&user)
+	if err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível encontrar esse usuário pelo número de telefone",
+		})
+		return
+	}
+
+	filter := bson.D{{Key: "_id", Value: user.ID}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "address.street", Value: body.Street},
+		{Key: "address.number", Value: body.Number},
+		{Key: "address.city", Value: body.City},
+		{Key: "address.cep", Value: body.CEP},
+		{Key: "address.state", Value: body.State},
+		{Key: "address.complement", Value: body.Complement},
+		{Key: "updated_at", Value: time.Now().String()},
+	}}}
+	opts := options.Update().SetUpsert(false)
+	_, err = collection.UpdateOne(h.context, filter, update, opts)
+	if err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Não foi possível atualizar a senha",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status_code": http.StatusOK,
+		"message":     "Endereço atualizado com sucesso",
 	})
 }
 

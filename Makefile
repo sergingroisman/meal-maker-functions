@@ -9,3 +9,6 @@ build_linux:
 
 start:
 	func start
+
+dev:
+	go run cmd/main.go

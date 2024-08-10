@@ -48,12 +48,37 @@ func initRoutes(router *gin.Engine) {
 
 	api := router.Group("/api")
 	{
+		// BFF
+		api.GET("/get-bff/:partner_id", h.GetBFFByPartnerId)
+
+		// Users
 		api.GET("/get-users", handlers.AuthenticateMiddleware, h.GetUsers)
-		api.GET("/get-user/:phone_number", handlers.AuthenticateMiddleware, h.GetUserByPhoneNumber)
+		api.GET("/get-user/:user_id", handlers.AuthenticateMiddleware, h.GetUserById)
 		api.POST("/update-user-password/:phone_number", handlers.AuthenticateMiddleware, h.UpdatePassword)
+		api.PATCH("/update-user-address/:user_id", handlers.AuthenticateMiddleware, h.UpdateUserAddress)
 		api.POST("/sign-up", h.SignUp)
 		api.POST("/sign-in", h.SignIn)
-		api.GET("/get-restaurant/:partner_id", h.GetRestaurantByPartnerId)
+
+		// Orders
+		api.GET("/get-orders-by-partner/:partner_id", h.GetOrdersByPartnerID)
+		api.GET("/get-orders-by-user/:user_id", h.GetOrdersByUserID)
+		api.POST("/create-order/:user_id", h.CreateOrderByUser)
+		api.PATCH("/update-order/:order_id", h.UpdateOrderByUser)
+
+		// Dish
+		api.GET("/get-dishes", h.GetDishes)
+		api.GET("/get-dish/:id", h.GetDishBydId)
+		api.POST("/create-dish", h.CreateDish)
+		api.POST("/upload-image", h.UploadImage)
+		api.PATCH("/update-dish/:id", h.UpdateDish)
+		api.DELETE("/delete-dish/:id", h.DeleteDish)
+
+		// Accompaniment
+		api.GET("/get-accompaniments", h.GetAccompaniments)
+		api.POST("/create-accompaniments", h.CreateAccompaniments)
+		api.POST("/update-accompaniments", h.UpdateAccompaniments)
+		api.DELETE("/delete-accompaniment/:accompaniment_id", h.DeleteAccompanimentById)
+
 		api.GET("/health-check", func(c *gin.Context) {
 			c.Header("Content-Type", "application/json")
 			c.JSON(http.StatusOK, gin.H{

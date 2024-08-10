@@ -11,6 +11,12 @@ var Env struct {
 	Auth struct {
 		SecretKey string `envconfig:"default=your-secret-key"`
 	}
+
+	Azure struct {
+		TenatID      string `envconfig:"default=active_directory_tenant_id"`
+		ClientID     string `envconfig:"default=<service_principal_appid>"`
+		ClientSecret string `envconfig:"default=service_principal_password"`
+	}
 }
 
 func Init() error {

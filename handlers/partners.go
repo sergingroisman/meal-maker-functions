@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,31 +18,31 @@ type Schedule struct {
 }
 
 type Partner struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Name      string             `bson:"name" json:"name"`
-	CNPJ      string             `bson:"cnpj" json:"cnpj"`
-	PartnerID int                `bson:"partner_id" json:"partner_id"`
-	Logo      string             `bson:"logo" json:"logo"`
-	Schedules []Schedule         `bson:"schedules" json:"schedules"`
-	Menus     []Menu             `bson:"menus" json:"menus"`
-	CreatedAt string             `bson:"created_at" json:"created_at"`
-	UpdatedAt string             `bson:"updated_at" json:"updated_at"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Name        string             `bson:"name" json:"name"`
+	PartnerID   int                `bson:"partner_id" json:"partner_id"`
+	Logo        string             `bson:"logo" json:"logo"`
+	Schedules   []Schedule         `bson:"schedules" json:"schedules"`
+	DeliveryFee float64            `bson:"delivery_fee" json:"delivery_fee"`
+	CreatedAt   string             `bson:"created_at" json:"created_at"`
+	UpdatedAt   string             `bson:"updated_at" json:"updated_at"`
 }
 
 type PartnerBFFResponse struct {
-	Name      string     `json:"name"`
-	CNPJ      string     `json:"cnpj"`
-	PartnerID int        `json:"partner_id"`
-	Logo      string     `json:"logo"`
-	IsOpen    bool       `json:"is_open"`
-	Schedules []Schedule `json:"schedules"`
-	Menus     []Menu     `json:"menus"`
+	Name           string          `json:"name"`
+	PartnerID      int             `json:"partner_id"`
+	Logo           string          `json:"logo"`
+	Schedules      []Schedule      `bson:"schedules" json:"schedules"`
+	IsOpen         bool            `json:"is_open"`
+	DeliveryFee    float64         `bson:"delivery_fee" json:"delivery_fee"`
+	Dishes         []Dish          `json:"dishes"`
+	Accompaniments []Accompaniment `json:"accompaniments"`
 }
 
-func (h *Handlers) GetRestaurantByPartnerId(c *gin.Context) {
+func (h *Handlers) GetBFFByPartnerId(c *gin.Context) {
 	partner_id_str := c.Param("partner_id")
 	if partner_id_str == "" {
-		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o id do parceciro como parâmetro")
+		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o id do parceiro como parâmetro")
 		return
 	}
 
@@ -68,18 +67,61 @@ func (h *Handlers) GetRestaurantByPartnerId(c *gin.Context) {
 		return
 	}
 
-	current_time := time.Now()
-	restaurant := PartnerBFFResponse{
-		Name:      partner.Name,
-		CNPJ:      partner.CNPJ,
-		PartnerID: partner.PartnerID,
-		Logo:      partner.Logo,
-		IsOpen:    partner.IsOpen(current_time),
-		Schedules: partner.Schedules,
-		Menus:     partner.Menus,
+	collectionD := h.database.Collection("Dishes")
+
+	cursor, err := collectionD.Find(h.context, bson.M{})
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	dishes := make([]Dish, 0)
+	for cursor.Next(h.context) {
+		var dish Dish
+		if err := cursor.Decode(&dish); err != nil {
+			log.Println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status_code": http.StatusInternalServerError,
+				"message":     "Não foi possível processar a lista de pratos",
+			})
+			return
+		}
+		dishes = append(dishes, dish)
 	}
 
-	c.IndentedJSON(http.StatusOK, restaurant)
+	collectionA := h.database.Collection("Accompaniments")
+
+	cursorA, err := collectionA.Find(h.context, bson.M{})
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	accompaniments := make([]Accompaniment, 0)
+	for cursorA.Next(h.context) {
+		var accompaniment Accompaniment
+		if err := cursorA.Decode(&accompaniment); err != nil {
+			log.Println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status_code": http.StatusInternalServerError,
+				"message":     "Não foi possível processar a lista de pratos",
+			})
+			return
+		}
+		accompaniments = append(accompaniments, accompaniment)
+	}
+
+	current_time := time.Now()
+	partnerBFF := PartnerBFFResponse{
+		Name:           partner.Name,
+		PartnerID:      partner.PartnerID,
+		Logo:           partner.Logo,
+		IsOpen:         partner.IsOpen(current_time),
+		Schedules:      partner.Schedules,
+		DeliveryFee:    partner.DeliveryFee,
+		Dishes:         dishes,
+		Accompaniments: accompaniments,
+	}
+
+	c.IndentedJSON(http.StatusOK, partnerBFF)
 }
 
 func (partner *Partner) IsOpen(t time.Time) bool {
@@ -103,55 +145,4 @@ func (partner *Partner) IsOpen(t time.Time) bool {
 		}
 	}
 	return false
-}
-
-func parseTime(time_str string) time.Time {
-	t, err := time.Parse("15:04", time_str)
-	if err != nil {
-		panic(err)
-	}
-	return time.Date(0, 0, 0, t.Hour(), t.Minute(), 0, 0, time.Local)
-}
-
-func parseDayOfWeekTime(day string) time.Weekday {
-	dayToLowerCase := strings.ToLower(day)
-	switch dayToLowerCase {
-	case "monday":
-		return time.Monday
-	case "tuesday":
-		return time.Tuesday
-	case "wednesday":
-		return time.Wednesday
-	case "thursday":
-		return time.Thursday
-	case "friday":
-		return time.Friday
-	case "saturday":
-		return time.Saturday
-	case "sunday":
-		return time.Sunday
-	default:
-		return time.Monday
-	}
-}
-
-func parseDayOfWeekString(day time.Weekday) string {
-	switch day {
-	case time.Monday:
-		return "Seg"
-	case time.Tuesday:
-		return "Ter"
-	case time.Wednesday:
-		return "Qua"
-	case time.Thursday:
-		return "Qui"
-	case time.Friday:
-		return "Sex"
-	case time.Saturday:
-		return "Sab"
-	case time.Sunday:
-		return "Dom"
-	default:
-		return ""
-	}
 }
