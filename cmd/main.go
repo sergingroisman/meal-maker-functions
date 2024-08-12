@@ -76,7 +76,7 @@ func initRoutes(router *gin.Engine) {
 		// Accompaniment
 		api.GET("/get-accompaniments", h.GetAccompaniments)
 		api.POST("/create-accompaniments", h.CreateAccompaniments)
-		api.POST("/update-accompaniments", h.UpdateAccompaniments)
+		api.PATCH("/update-accompaniments", h.UpdateAccompaniments)
 		api.DELETE("/delete-accompaniment/:accompaniment_id", h.DeleteAccompanimentById)
 
 		api.GET("/health-check", func(c *gin.Context) {
