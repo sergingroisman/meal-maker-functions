@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -42,16 +43,17 @@ type OrderDishes struct {
 }
 
 type Order struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	User          User               `bson:"user" json:"user"`
-	PartnerID     int                `bson:"partner_id" json:"partner_id"`
-	Dishes        []OrderDishes      `bson:"dishes" json:"dishes"`
-	Status        OrderStatus        `bson:"status" json:"status"`
-	PaymentType   string             `bson:"payment_type" json:"payment_type"`
-	QuantityTotal int                `bson:"quantity_total" json:"quantity_total"`
-	Total         float64            `bson:"total" json:"total"`
-	CreatedAt     string             `bson:"created_at" json:"created_at"`
-	UpdatedAt     string             `bson:"updated_at" json:"updated_at"`
+	ID            int           `bson:"_id,omitempty" json:"_id,omitempty"`
+	User          User          `bson:"user" json:"user"`
+	PartnerID     int           `bson:"partner_id" json:"partner_id"`
+	Dishes        []OrderDishes `bson:"dishes" json:"dishes"`
+	Status        OrderStatus   `bson:"status" json:"status"`
+	PaymentType   string        `bson:"payment_type" json:"payment_type"`
+	DeliveryType  string        `bson:"delivery_type" json:"delivery_type"`
+	QuantityTotal int           `bson:"quantity_total" json:"quantity_total"`
+	Total         float64       `bson:"total" json:"total"`
+	CreatedAt     string        `bson:"created_at" json:"created_at"`
+	UpdatedAt     string        `bson:"updated_at" json:"updated_at"`
 }
 
 type OrderCreateReqBody struct {
@@ -61,6 +63,7 @@ type OrderCreateReqBody struct {
 	Total         float64       `bson:"total" json:"total"`
 	Dishes        []OrderDishes `bson:"dishes" json:"dishes"`
 	PaymentType   string        `bson:"payment_type" json:"payment_type"`
+	DeliveryType  string        `bson:"delivery_type" json:"delivery_type"`
 }
 
 type OrderUpdateReqBody struct {
@@ -68,16 +71,22 @@ type OrderUpdateReqBody struct {
 }
 
 type OrderResponse struct {
-	ID            primitive.ObjectID `json:"_id,omitempty"`
-	User          User               `json:"user"`
-	PartnerID     int                `json:"partner_id"`
-	Dishes        []OrderDishes      `json:"dishes"`
-	Status        string             `json:"status"`
-	PaymentType   string             `json:"payment_type"`
-	QuantityTotal int                `json:"quantity_total"`
-	Total         float64            `json:"total"`
-	CreatedAt     string             `bson:"created_at" json:"created_at"`
+	ID            int           `json:"_id,omitempty"`
+	User          User          `json:"user"`
+	PartnerID     int           `json:"partner_id"`
+	Dishes        []OrderDishes `json:"dishes"`
+	Status        string        `json:"status"`
+	PaymentType   string        `json:"payment_type"`
+	DeliveryType  string        `json:"delivery_type"`
+	QuantityTotal int           `json:"quantity_total"`
+	Total         float64       `json:"total"`
+	CreatedAt     string        `bson:"created_at" json:"created_at"`
 }
+
+var (
+	orderCounter  int
+	counterOMutex sync.Mutex
+)
 
 func (h *Handlers) GetOrdersByPartnerID(c *gin.Context) {
 	collection := h.database.Collection("Orders")
@@ -105,17 +114,22 @@ func (h *Handlers) GetOrdersByPartnerID(c *gin.Context) {
 	}
 
 	// Calcular o início do dia atual
-	startOfDay := time.Now().Truncate(24 * time.Hour) // 00:00 do dia atual
+	startOfDay := time.Now().Truncate(24 * time.Hour)
 	// Calcular o fim do dia atual
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	startOfDayStr := startOfDay.Format("2006-01-02T00:00:00") // 00:00 do dia atual
+	startOfDayStr := startOfDay.Format("2006-01-02T00:00:00")
 	endOfDayStr := endOfDay.Format("2006-01-02T00:00:00")
 
 	filter := bson.D{
 		{Key: "partner_id", Value: partner_id},
 		{Key: "created_at", Value: bson.D{{Key: "$gte", Value: startOfDayStr}, {Key: "$lt", Value: endOfDayStr}}},
 	}
+
+	if _, exists := c.GetQuery("feed"); exists {
+		filter = append(filter, bson.E{Key: "status", Value: bson.D{{Key: "$ne", Value: OrderDelivered}}})
+	}
+
 	options := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
 	cursor, err := collection.Find(h.context, filter, options)
 	if err != nil {
@@ -153,6 +167,7 @@ func (h *Handlers) GetOrdersByPartnerID(c *gin.Context) {
 			Dishes:        order.Dishes,
 			Status:        order.Status.String(),
 			PaymentType:   order.PaymentType,
+			DeliveryType:  order.DeliveryType,
 			QuantityTotal: order.QuantityTotal,
 			Total:         order.Total,
 			CreatedAt:     createdAt.Format("2006-01-02 15:04:05"),
@@ -228,6 +243,7 @@ func (h *Handlers) GetOrdersByUserID(c *gin.Context) {
 			Dishes:        order.Dishes,
 			Status:        order.Status.String(),
 			PaymentType:   order.PaymentType,
+			DeliveryType:  order.DeliveryType,
 			QuantityTotal: order.QuantityTotal,
 			Total:         order.Total,
 			CreatedAt:     createdAt.Format("2006-01-02 15:04:05"),
@@ -243,6 +259,10 @@ func (h *Handlers) CreateOrderByUser(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o id do usuário por parâmetro")
 		return
 	}
+
+	counterOMutex.Lock()
+	defer counterOMutex.Unlock()
+	orderCounter++
 
 	user_id, _ := primitive.ObjectIDFromHex(user_id_str)
 
@@ -278,12 +298,13 @@ func (h *Handlers) CreateOrderByUser(c *gin.Context) {
 	var status OrderStatus = OrderSent
 
 	order := Order{
-		ID:            primitive.NewObjectID(),
+		ID:            orderCounter,
 		User:          user,
 		Status:        status,
 		PartnerID:     partner_id,
 		Dishes:        body.Dishes,
 		PaymentType:   body.PaymentType,
+		DeliveryType:  body.DeliveryType,
 		Total:         body.Total,
 		QuantityTotal: body.QuantityTotal,
 		CreatedAt:     time.Now().String(),
@@ -313,7 +334,15 @@ func (h *Handlers) UpdateOrderByUser(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "Necessário passar o id do pedido como parâmetro")
 		return
 	}
-	order_id, _ := primitive.ObjectIDFromHex(order_id_str)
+
+	order_id, err := strconv.Atoi(order_id_str)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status_code": http.StatusBadRequest,
+			"message":     "Formato de ID inválido",
+		})
+		return
+	}
 
 	body := OrderUpdateReqBody{}
 	if err := c.ShouldBindBodyWithJSON(&body); err != nil {
@@ -334,7 +363,7 @@ func (h *Handlers) UpdateOrderByUser(c *gin.Context) {
 		{Key: "updated_at", Value: time.Now().String()},
 	}}}
 	opts := options.Update().SetUpsert(false)
-	_, err := collection.UpdateOne(h.context, filter, update, opts)
+	_, err = collection.UpdateOne(h.context, filter, update, opts)
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{

@@ -79,6 +79,12 @@ func initRoutes(router *gin.Engine) {
 		api.PATCH("/update-accompaniments", h.UpdateAccompaniments)
 		api.DELETE("/delete-accompaniment/:accompaniment_id", h.DeleteAccompanimentById)
 
+		// Delivery Man
+		api.GET("/get-deliveries", h.GetDeliveries)
+		api.POST("/create-delivery", h.CreateDelivery)
+		api.PATCH("/update-delivery/:delivery_id", h.UpdateDeliveryByID)
+		api.DELETE("/delete-delivery/:delivery_id", h.DeleteDeliveryByID)
+
 		api.GET("/health-check", func(c *gin.Context) {
 			c.Header("Content-Type", "application/json")
 			c.JSON(http.StatusOK, gin.H{
