@@ -5,9 +5,9 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "get-user/{user_id}",
+      "route": "create-accompaniments",
       "methods": [
-        "get"
+        "post"
       ]
     },
     {

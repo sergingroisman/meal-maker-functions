@@ -5,9 +5,9 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "get-restaurant/{partner_id}",
+      "route": "update-user-address/{user_id}",
       "methods": [
-        "get"
+        "patch"
       ]
     },
     {
