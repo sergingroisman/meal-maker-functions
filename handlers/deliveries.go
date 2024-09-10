@@ -149,7 +149,7 @@ func (h *Handlers) UpdateDeliveryByID(c *gin.Context) {
 		return
 	}
 
-	collection := h.database.Collection("Orders")
+	collection := h.database.Collection("Deliveries")
 	filter := bson.D{{Key: "_id", Value: delivery_id}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "name", Value: body.Name},
@@ -190,7 +190,7 @@ func (h *Handlers) DeleteDeliveryByID(c *gin.Context) {
 	}
 
 	collection := h.database.Collection("Deliveries")
-	filter := bson.D{{Key: "id", Value: deliveryID}}
+	filter := bson.D{{Key: "_id", Value: deliveryID}}
 
 	// Execute a operação de delete
 	result, err := collection.DeleteOne(h.context, filter)

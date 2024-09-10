@@ -49,6 +49,7 @@ type Order struct {
 	Dishes        []OrderDishes `bson:"dishes" json:"dishes"`
 	Status        OrderStatus   `bson:"status" json:"status"`
 	PaymentType   string        `bson:"payment_type" json:"payment_type"`
+	DeliveryID    int           `bson:"delivery_id" json:"delivery_id"`
 	DeliveryType  string        `bson:"delivery_type" json:"delivery_type"`
 	QuantityTotal int           `bson:"quantity_total" json:"quantity_total"`
 	Total         float64       `bson:"total" json:"total"`
@@ -77,6 +78,7 @@ type OrderResponse struct {
 	Dishes        []OrderDishes `json:"dishes"`
 	Status        string        `json:"status"`
 	PaymentType   string        `json:"payment_type"`
+	Delivery      Delivery      `json:"delivery"`
 	DeliveryType  string        `json:"delivery_type"`
 	QuantityTotal int           `json:"quantity_total"`
 	Total         float64       `json:"total"`
@@ -113,13 +115,12 @@ func (h *Handlers) GetOrdersByPartnerID(c *gin.Context) {
 		return time.Parse("2006-01-02 15:04:05.999999999", fmt.Sprintf("%s %s", datePart, timePart))
 	}
 
-	// Calcular o início do dia atual
+	// Calcular o início e fim do dia atual no formato correto
 	startOfDay := time.Now().Truncate(24 * time.Hour)
-	// Calcular o fim do dia atual
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	startOfDayStr := startOfDay.Format("2006-01-02T00:00:00")
-	endOfDayStr := endOfDay.Format("2006-01-02T00:00:00")
+	startOfDayStr := startOfDay.Format("2006-01-02 15:04:05.999999999 -0300 -03")
+	endOfDayStr := endOfDay.Format("2006-01-02 15:04:05.999999999 -0300 -03")
 
 	filter := bson.D{
 		{Key: "partner_id", Value: partner_id},
@@ -160,6 +161,25 @@ func (h *Handlers) GetOrdersByPartnerID(c *gin.Context) {
 			return
 		}
 
+		var delivery Delivery
+		if order.DeliveryID != 0 {
+			collectionD := h.database.Collection("Deliveries")
+			filter := bson.D{{Key: "_id", Value: order.DeliveryID}}
+
+			// Realiza a consulta no banco de dados
+			err := collectionD.FindOne(h.context, filter).Decode(&delivery)
+
+			if err != nil {
+				// Loga o erro e retorna uma resposta JSON apropriada
+				log.Println("Erro ao buscar entrega:", err.Error())
+				c.JSON(http.StatusNotFound, gin.H{
+					"status_code": http.StatusNotFound,
+					"message":     "Não foi possível encontrar a entrega com o ID fornecido.",
+				})
+				return
+			}
+		}
+
 		orders = append(orders, OrderResponse{
 			ID:            order.ID,
 			User:          order.User,
@@ -167,6 +187,7 @@ func (h *Handlers) GetOrdersByPartnerID(c *gin.Context) {
 			Dishes:        order.Dishes,
 			Status:        order.Status.String(),
 			PaymentType:   order.PaymentType,
+			Delivery:      delivery,
 			DeliveryType:  order.DeliveryType,
 			QuantityTotal: order.QuantityTotal,
 			Total:         order.Total,
@@ -362,6 +383,24 @@ func (h *Handlers) UpdateOrderByUser(c *gin.Context) {
 		{Key: "status", Value: status},
 		{Key: "updated_at", Value: time.Now().String()},
 	}}}
+
+	delivery_id_str, deliveryExists := c.GetQuery("delivery_id")
+
+	if deliveryExists {
+		delivery_id, err := strconv.Atoi(delivery_id_str)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status_code": http.StatusBadRequest,
+				"message":     "Formato de ID de entregador inválido",
+			})
+			return
+		}
+		update = append(update, bson.E{
+			Key: "$set", Value: bson.D{
+				{Key: "delivery_id", Value: delivery_id},
+			},
+		})
+	}
 	opts := options.Update().SetUpsert(false)
 	_, err = collection.UpdateOne(h.context, filter, update, opts)
 	if err != nil {
