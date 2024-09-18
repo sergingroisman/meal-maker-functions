@@ -33,6 +33,7 @@ type User struct {
 	Password    string             `bson:"password" json:"password"`
 	PartnerID   int                `bson:"partner_id" json:"partner_id"`
 	Address     Address            `bson:"address" json:"address"`
+	Role        string             `bson:"role" json:"role"`
 	CreatedAt   string             `bson:"created_at" json:"created_at"`
 	UpdatedAt   string             `bson:"updated_at" json:"updated_at"`
 }
@@ -59,6 +60,7 @@ type SignInResponse struct {
 	Accesstoken string             `json:"access_token"`
 	Name        string             `json:"name"`
 	PhoneNumber string             `json:"phone_number"`
+	Role        string             `json:"role"`
 	PartnerID   int                `json:"partner_id"`
 	ExpiresIn   time.Duration      `json:"expires_in"`
 }
@@ -267,6 +269,7 @@ func (h *Handlers) SignIn(c *gin.Context) {
 		Accesstoken: bearer_token.String(),
 		Name:        user.Name,
 		PartnerID:   1,
+		Role:        user.Role,
 		PhoneNumber: user.PhoneNumber,
 		ExpiresIn:   (time.Duration(30*24) * time.Hour),
 	}
